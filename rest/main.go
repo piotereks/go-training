@@ -102,6 +102,22 @@ func getDiskSpace(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUnknownEndpoint(w http.ResponseWriter, r *http.Request) {
-    w.WriteHeader(http.StatusNotFound)
-    fmt.Fprintf(w, "Unknown endpoint: %s", r.URL.Path)
-}
+    unknownEndpoint := r.URL.Path
+    fileName := strings.ReplaceAll(unknownEndpoint, "/", "_") + ".json"
+    
+    file, err := os.Create(fileName)
+    if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+    }
+    defer file.Close()
+    
+    emptyJSON, _ := json.Marshal(map[string]interface{}{})
+    _, err = file.Write(emptyJSON)
+    if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+    }
+    
+    fmt.Printf("Created %s\n", fileName)
+    }
