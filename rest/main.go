@@ -105,19 +105,24 @@ func handleUnknownEndpoint(w http.ResponseWriter, r *http.Request) {
     unknownEndpoint := r.URL.Path
     fileName := strings.ReplaceAll(unknownEndpoint, "/", "_") + ".json"
     
-    file, err := os.Create(fileName)
-    if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-    }
-    defer file.Close()
+    filePath := filepath.Join(".", fileName)
     
-    emptyJSON, _ := json.Marshal(map[string]interface{}{})
-    _, err = file.Write(emptyJSON)
-    if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
+    if _, err := os.Stat(filePath); os.IsNotExist(err) {
+        // Create empty JSON file if it doesn't exist
+        emptyData := []byte("{}")
+        err := os.WriteFile(filePath, emptyData, 0644)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
     }
     
-    fmt.Printf("Created %s\n", fileName)
+    jsonData, err := os.ReadFile(filePath)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
     }
+    
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(jsonData)
+}
